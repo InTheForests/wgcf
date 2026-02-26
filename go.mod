@@ -5,7 +5,6 @@ go 1.24.0
 toolchain go1.24.1
 
 require (
-	github.com/ViRb3/wgcf/v2/openapi v0.0.0-00010101000000-000000000000
 	github.com/cockroachdb/errors v1.12.0
 	github.com/dustin/go-humanize v1.0.1
 	github.com/manifoldco/promptui v0.9.0
@@ -39,4 +38,3 @@ require (
 	golang.org/x/text v0.32.0 // indirect
 )
 
-replace github.com/ViRb3/wgcf/v2/openapi => ./openapi
