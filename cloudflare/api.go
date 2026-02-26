@@ -37,11 +37,11 @@ var (
 	}
 )
 
-var apiClient = MakeApiClient(nil)
-var apiClientAuth *openapi.APIClient
-
-func MakeApiClient(authToken *string) *openapi.APIClient {
-	httpClient := http.Client{Transport: DefaultTransport}
+func NewApiClient(authToken *string, transport *http.Transport) *openapi.APIClient {
+	if transport == nil {
+		transport = DefaultTransport
+	}
+	httpClient := http.Client{Transport: transport}
 	apiClient := openapi.NewAPIClient(&openapi.Configuration{
 		DefaultHeader: DefaultHeaders,
 		UserAgent:     DefaultHeaders["User-Agent"],
@@ -57,7 +57,7 @@ func MakeApiClient(authToken *string) *openapi.APIClient {
 	return apiClient
 }
 
-func Register(publicKey *wireguard.Key, deviceModel string) (*openapi.Register200Response, error) {
+func Register(apiClient *openapi.APIClient, publicKey *wireguard.Key, deviceModel string) (*openapi.Register200Response, error) {
 	timestamp := util.GetTimestamp()
 	result, _, err := apiClient.DefaultAPI.
 		Register(nil, ApiVersion).
@@ -75,32 +75,28 @@ func Register(publicKey *wireguard.Key, deviceModel string) (*openapi.Register20
 
 type SourceDevice openapi.GetSourceDevice200Response
 
-func GetSourceDevice(ctx *config.Context) (*SourceDevice, error) {
-	result, _, err := globalClientAuth(ctx.AccessToken).DefaultAPI.
+func GetSourceDevice(apiClient *openapi.APIClient, ctx *config.Context) (*SourceDevice, error) {
+	apiClient.GetConfig().DefaultHeader["Authorization"] = "Bearer " + ctx.AccessToken
+	result, _, err := apiClient.DefaultAPI.
 		GetSourceDevice(nil, ApiVersion, ctx.DeviceId).
 		Execute()
 	return (*SourceDevice)(result), errors.WithStack(err)
 }
 
-func globalClientAuth(authToken string) *openapi.APIClient {
-	if apiClientAuth == nil {
-		apiClientAuth = MakeApiClient(&authToken)
-	}
-	return apiClientAuth
-}
-
 type Account openapi.Account
 
-func GetAccount(ctx *config.Context) (*Account, error) {
-	result, _, err := globalClientAuth(ctx.AccessToken).DefaultAPI.
+func GetAccount(apiClient *openapi.APIClient, ctx *config.Context) (*Account, error) {
+	apiClient.GetConfig().DefaultHeader["Authorization"] = "Bearer " + ctx.AccessToken
+	result, _, err := apiClient.DefaultAPI.
 		GetAccount(nil, ctx.DeviceId, ApiVersion).
 		Execute()
 	castResult := (*Account)(result)
 	return castResult, errors.WithStack(err)
 }
 
-func UpdateLicenseKey(ctx *config.Context) (*openapi.UpdateAccount200Response, error) {
-	result, _, err := globalClientAuth(ctx.AccessToken).DefaultAPI.
+func UpdateLicenseKey(apiClient *openapi.APIClient, ctx *config.Context) (*openapi.UpdateAccount200Response, error) {
+	apiClient.GetConfig().DefaultHeader["Authorization"] = "Bearer " + ctx.AccessToken
+	result, _, err := apiClient.DefaultAPI.
 		UpdateAccount(nil, ctx.DeviceId, ApiVersion).
 		UpdateAccountRequest(openapi.UpdateAccountRequest{License: ctx.LicenseKey}).
 		Execute()
@@ -113,8 +109,9 @@ func UpdateLicenseKey(ctx *config.Context) (*openapi.UpdateAccount200Response, e
 
 type BoundDevice openapi.BoundDevice
 
-func GetBoundDevices(ctx *config.Context) ([]BoundDevice, error) {
-	result, _, err := globalClientAuth(ctx.AccessToken).DefaultAPI.
+func GetBoundDevices(apiClient *openapi.APIClient, ctx *config.Context) ([]BoundDevice, error) {
+	apiClient.GetConfig().DefaultHeader["Authorization"] = "Bearer " + ctx.AccessToken
+	result, _, err := apiClient.DefaultAPI.
 		GetBoundDevices(nil, ctx.DeviceId, ApiVersion).
 		Execute()
 	if err != nil {
@@ -127,28 +124,29 @@ func GetBoundDevices(ctx *config.Context) ([]BoundDevice, error) {
 	return castResult, nil
 }
 
-func GetSourceBoundDevice(ctx *config.Context) (*BoundDevice, error) {
-	result, err := GetBoundDevices(ctx)
+func GetSourceBoundDevice(apiClient *openapi.APIClient, ctx *config.Context) (*BoundDevice, error) {
+	result, err := GetBoundDevices(apiClient, ctx)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 	return FindDevice(result, ctx.DeviceId)
 }
 
-func UpdateSourceBoundDeviceName(ctx *config.Context, targetDeviceId string, newName string) (*BoundDevice, error) {
-	return updateSourceBoundDevice(ctx, targetDeviceId, openapi.UpdateBoundDeviceRequest{
+func UpdateSourceBoundDeviceName(apiClient *openapi.APIClient, ctx *config.Context, targetDeviceId string, newName string) (*BoundDevice, error) {
+	return updateSourceBoundDevice(apiClient, ctx, targetDeviceId, openapi.UpdateBoundDeviceRequest{
 		Name: &newName,
 	})
 }
 
-func UpdateSourceBoundDeviceActive(ctx *config.Context, targetDeviceId string, active bool) (*BoundDevice, error) {
-	return updateSourceBoundDevice(ctx, targetDeviceId, openapi.UpdateBoundDeviceRequest{
+func UpdateSourceBoundDeviceActive(apiClient *openapi.APIClient, ctx *config.Context, targetDeviceId string, active bool) (*BoundDevice, error) {
+	return updateSourceBoundDevice(apiClient, ctx, targetDeviceId, openapi.UpdateBoundDeviceRequest{
 		Active: &active,
 	})
 }
 
-func updateSourceBoundDevice(ctx *config.Context, targetDeviceId string, data openapi.UpdateBoundDeviceRequest) (*BoundDevice, error) {
-	result, _, err := globalClientAuth(ctx.AccessToken).DefaultAPI.
+func updateSourceBoundDevice(apiClient *openapi.APIClient, ctx *config.Context, targetDeviceId string, data openapi.UpdateBoundDeviceRequest) (*BoundDevice, error) {
+	apiClient.GetConfig().DefaultHeader["Authorization"] = "Bearer " + ctx.AccessToken
+	result, _, err := apiClient.DefaultAPI.
 		UpdateBoundDevice(nil, ctx.DeviceId, ApiVersion, targetDeviceId).
 		UpdateBoundDeviceRequest(data).
 		Execute()
@@ -162,8 +160,9 @@ func updateSourceBoundDevice(ctx *config.Context, targetDeviceId string, data op
 	return FindDevice(castResult, ctx.DeviceId)
 }
 
-func DeleteBoundDevice(ctx *config.Context, targetDeviceId string) error {
-	if _, err := globalClientAuth(ctx.AccessToken).DefaultAPI.
+func DeleteBoundDevice(apiClient *openapi.APIClient, ctx *config.Context, targetDeviceId string) error {
+	apiClient.GetConfig().DefaultHeader["Authorization"] = "Bearer " + ctx.AccessToken
+	if _, err := apiClient.DefaultAPI.
 		DeleteBoundDevice(nil, ctx.DeviceId, ApiVersion, targetDeviceId).
 		Execute(); err != nil {
 		return err
