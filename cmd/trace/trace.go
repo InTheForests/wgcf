@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	. "github.com/ViRb3/wgcf/v2/cmd/shared"
+	. "github.com/InTheForests/wgcf/cmd/shared"
 	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 )

@@ -7,9 +7,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/ViRb3/wgcf/v2/cloudflare"
-	"github.com/ViRb3/wgcf/v2/config"
-	"github.com/ViRb3/wgcf/v2/util"
+	"github.com/InTheForests/wgcf/cloudflare"
+	"github.com/InTheForests/wgcf/config"
+	"github.com/InTheForests/wgcf/util"
 	"github.com/dustin/go-humanize"
 
 	"github.com/cockroachdb/errors"

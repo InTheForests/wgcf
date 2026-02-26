@@ -5,7 +5,7 @@ package main
 import (
 	"log"
 
-	"github.com/ViRb3/wgcf/v2/cmd"
+	"github.com/InTheForests/wgcf/cmd"
 )
 
 func main() {

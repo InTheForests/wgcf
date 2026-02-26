@@ -1,4 +1,4 @@
-module github.com/ViRb3/wgcf/v2
+module github.com/InTheForests/wgcf
 
 go 1.24.0
 
